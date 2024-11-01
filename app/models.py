@@ -1,5 +1,5 @@
 from .database import Base
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float, Text, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float, Text, TIMESTAMP, Table, DateTime
 from sqlalchemy.sql.expression import text
 from sqlalchemy.orm import relationship
 from enum import Enum
@@ -19,8 +19,14 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     
     # Relationships
-    stylist_profile = relationship("Stylist", back_populates="user", uselist=False)
-    appointments = relationship("Appointment", back_populates="client")
+    bookings = relationship("Booking", back_populates="user")
+
+
+stylist_service_association = Table(
+    'stylist_service', Base.metadata,
+    Column('stylist_id', Integer, ForeignKey('stylists.id'), primary_key=True),
+    Column('service_id', Integer, ForeignKey('services.id'), primary_key=True)
+)
 
 
 class Stylist(Base):
@@ -28,28 +34,57 @@ class Stylist(Base):
     __tablename__ = 'stylists'
 
     id = Column(Integer, primary_key=True, nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), unique=True)
     username = Column(String, unique=True, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
-    role = Column(String, default="stylist")
+    role = Column(String, default="stylist", nullable=False)
     bio = Column(Text)
     specialization = Column(String)
     verified = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), 
                         nullable=False, server_default=text('now()'))
 
     # Relationships
-    user = relationship("User", back_populates="stylist_profile")
-    services = relationship("Service", secondary="stylist_services", back_populates="stylists")
-    appointments = relationship("Appointment", back_populates="stylist")
+    bookings = relationship("Booking", back_populates="stylist")
+    services = relationship("Service", secondary=stylist_service_association, back_populates="stylists")
+    #appointments = relationship("Appointment", secondary=stylist_appointments, 
+                    #            back_populates="stylists")
 
 
-class StylistServices(Base):
-    __tablename__ = 'stylist_services'
-    stylist_id = Column(Integer, ForeignKey("stylists.id"), primary_key=True)
-    service_id = Column(Integer, ForeignKey("services.id"), primary_key=True)
+
+class Service(Base):
+    """Services model"""
+    __tablename__ = 'services'
+
+    id = Column(Integer, primary_key=True, index=True)
+    service_id = Column(Integer, nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)  
+    duration = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), 
+                        nullable=False, server_default=text('now()'))
+
+    # Many-to-Many relationship with stylists
+    bookings = relationship("Booking", back_populates="service")
+    stylists = relationship("Stylist", secondary=stylist_service_association, back_populates="services") 
+
+
+
+class Booking(Base):
+    __tablename__ = 'bookings'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    service_id = Column(Integer, ForeignKey('services.id'), nullable=False)
+    stylist_id = Column(Integer, ForeignKey('stylists.id'), nullable=False)
+    appointment_time = Column(DateTime, nullable=False)
+    status = Column(String, default="pending")  # Example statuses: "pending", "confirmed", "completed"
+
+    user = relationship("User", back_populates="bookings")
+    service = relationship("Service", back_populates="bookings")
+    stylist = relationship("Stylist", back_populates="bookings")
+
 
 class Admin(Base):
     """Admin model"""
@@ -62,17 +97,6 @@ class Admin(Base):
     email = Column(String, unique=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
-class Service(Base):
-    """Services model"""
-    __tablename__ = 'services'
-
-    id = Column(Integer, primary_key=True, index=True)
-    description = Column(String, nullable=False)
-    price = Column(Float, nullable=False)
-    duration = Column(Integer, nullable=False)
-
-    # Many-to-Many relationship with stylists
-    stylists = relationship("Stylist", secondary="stylist_services", back_populates="services")
 
 
 class Appointment(Base):
@@ -88,9 +112,9 @@ class Appointment(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     # Relationships
-    stylist = relationship("Stylist", back_populates="appointments")
-    client = relationship("User", back_populates="appointments")
-    review = relationship("Review", back_populates="appointment", uselist=False)
+    #stylist = relationship("Stylist", back_populates="appointments")
+    #client = relationship("User", back_populates="appointments")
+    #review = relationship("Review", back_populates="appointment", uselist=False)
 
 
 class Review(Base):
@@ -104,4 +128,4 @@ class Review(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
 
     # Relationship
-    appointment = relationship("Appointment", back_populates="review")
+    #appointment = relationship("Appointment", back_populates="review")

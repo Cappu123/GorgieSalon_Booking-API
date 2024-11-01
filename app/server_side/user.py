@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED, 
-             response_model=schemas.UserCreateResponse) 
+             response_model=schemas.UserResponse) 
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """Creates a new user"""
     try:
@@ -47,7 +47,7 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         )
     
 
-@router.get("/profile/{user_id}", response_model=schemas.UserResponseBase)
+@router.get("/profile/{user_id}", response_model=schemas.UserResponse)
 def get_user_profile(user_id: int, db: Session = Depends(get_db), 
 current_user = Depends(authorization.get_current_user)):
     """Users retrieving a specific user's(client) info"""
@@ -60,9 +60,8 @@ current_user = Depends(authorization.get_current_user)):
 
 
 
-@router.put("/profile/update/", response_model=schemas.UserResponseBase)
-def update_user_profile(updated_profile: schemas.UserCreate, db: Session = Depends(get_db), 
-                        current_user: int = Depends(authorization.get_current_user)):
+@router.put("/profile/update/", response_model=schemas.UserResponse)
+def update_user_profile(updated_profile: schemas.UserCreate, db: Session = Depends(get_db)):
     """Updates a user's profile"""
 
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
@@ -71,7 +70,7 @@ def update_user_profile(updated_profile: schemas.UserCreate, db: Session = Depen
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"The requested user profile does not exist")
     
-    for key, value in updated_profile.dict(exclude_unset=True).items():
+    for key, value in updated_profile.dict().items():
         setattr(user, key, value)
 
     db.commit()
@@ -80,8 +79,7 @@ def update_user_profile(updated_profile: schemas.UserCreate, db: Session = Depen
 
 
 @router.delete("/profile/delete/", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user_profile(db: Session = Depends(get_db), 
-                        current_user: int = Depends(authorization.get_current_user)):
+def delete_user_profile(db: Session = Depends(get_db)):
     """Deletes a user's profile"""
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
 
@@ -95,9 +93,8 @@ def delete_user_profile(db: Session = Depends(get_db),
 
 
 
-@router.put("/profile/change_password/", response_model=schemas.UserResponseBase)
-def update_user_password(password_change: schemas.PasswordChange, db: Session = Depends(get_db), 
-                         current_user: int = Depends(authorization.get_current_user)):
+@router.put("/profile/change_password/", response_model=schemas.UserResponse)
+def update_user_password(password_change: schemas.PasswordChange, db: Session = Depends(get_db)):
     """Updates a user's password"""
 
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
@@ -117,52 +114,65 @@ def update_user_password(password_change: schemas.PasswordChange, db: Session = 
 
 
 
-@router.get("/stylists", response_model=List[schemas.StylistwithServicesResponse])
-def list_stylists(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), 
-                  current_user: int = Depends(authorization.get_current_user)):
-    """Retrieve a list of stylists"""
-    stylists = db.query(models.Stylist).offset(skip).limit(limit).all()
-    return stylists
+@router.get("/services", response_model=List[schemas.ServiceResponse])
+def get_services(db: Session = Depends(get_db)):
+    """Retrieves all services"""
+    services = db.query(models.Service).all()
+    return services
+
+
+@router.get("/services/{service_id}", response_model=schemas.ServiceResponse)
+def get_service(service_id: int, db: Session = Depends(get_db)):
+
+    """Retrieves a specific service"""
+    service = db.query(models.Service).filter(models.Service.service_id == service_id).first()
+    return service
+
+
+@router.get("/stylists", response_model=List[schemas.StylistResponse])
+def get_stylists(db: Session = Depends(get_db)):
+    """Retrieves all stylists"""
+    stylists = db.query(models.Stylist).all()
 
 
 
-@router.get("/stylists/{stylist_id}", response_model=schemas.StylistwithServicesResponse)
-def get_stylist_profile(stylist_id: int, db: Session = Depends(get_db), 
-                        current_user: int = Depends(authorization.get_current_user)):
-    """Retrieve a specific stylist's profile"""
-    stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id, 
-                                              models.Stylist.verified == True, 
-                                              models.Stylist.is_active == False).first()
-    if not stylist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"Stylist with id {stylist_id} does not exist")
+@router.get("/stylists/{stylist_id}", response_model=schemas.StylistResponse)
+def get_stylist(stylist_id: int, db: Session = Depends(get_db)):
+    """Retrieves a specific stylist"""
+    stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
     return stylist
 
 
 
-@router.get("/stylists/search", response_model=List[schemas.StylistCreateResponse])
-def search_stylists(query: str, db: Session = Depends(get_db)):
-    """Search for stylists by name or specialty"""
+@router.post("/bookings/{service_id}", response_model=schemas.BookingResponse)
+def create_service_booking(service_id: int, booking: schemas.BookingCreate, db: Session = Depends(get_db)):
 
-    stylists = db.query(models.Stylist).filter(
-        (models.Stylist.bio.ilike(f"%{query}%")) |
-        (models.Stylist.username.ilike(f"%{query}%")) |
-        (models.Stylist.specialization.ilike(f"%{query}%"))
-    ).all()
-    return stylists
-
-
-
-@router.post("/bookings", response_model=schemas.BookingResponse)
-def create_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db),
-                   current_user: int = Depends(authorization.get_current_user)):
+    # Check if the service exists
+    service = db.query(models.Service).filter(models.Service.id == booking.service_id).first()
+    if not service:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
     
-    """Create a booking for a client"""
-    booking_data= booking.dict()
-    new_booking = models.Booking(**booking_data)
+    stylist = db.query(models.Stylist).filter(models.Stylist.id == booking.stylist_id).first()
+    if not stylist:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stylist not found")
+    
+    # Create a new booking
+    new_booking = models.Booking(
+        #user_id=current_user.id,
+        service_id=booking.service_id,
+        stylist_id=booking.stylist_id,
+        appointment_time=booking.appointment_time,
+        status="pending"
+    )
 
     db.add(new_booking)
     db.commit()
     db.refresh(new_booking)
+
     return new_booking
+
+
+
+ 
+                # current_user = Depends(authorization.get_current_user)
      
