@@ -30,6 +30,7 @@ class UserResponse(BaseModel):
 
 class TokenData(BaseModel):
     username: str
+    role: str
 
     class Config:
         from_attributes = True

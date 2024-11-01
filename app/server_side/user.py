@@ -49,7 +49,7 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.get("/profile/{user_id}", response_model=schemas.UserResponse)
 def get_user_profile(user_id: int, db: Session = Depends(get_db), 
-current_user = Depends(authorization.get_current_user)):
+                     current_user = Depends(authorization.get_current_user)):
     """Users retrieving a specific user's(client) info"""
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -61,7 +61,9 @@ current_user = Depends(authorization.get_current_user)):
 
 
 @router.put("/profile/update/", response_model=schemas.UserResponse)
-def update_user_profile(updated_profile: schemas.UserCreate, db: Session = Depends(get_db)):
+def update_user_profile(updated_profile: schemas.UserCreate, 
+                        db: Session = Depends(get_db), 
+                        current_user = Depends(authorization.get_current_user)):
     """Updates a user's profile"""
 
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
@@ -79,7 +81,8 @@ def update_user_profile(updated_profile: schemas.UserCreate, db: Session = Depen
 
 
 @router.delete("/profile/delete/", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user_profile(db: Session = Depends(get_db)):
+def delete_user_profile(db: Session = Depends(get_db), 
+                        current_user = Depends(authorization.get_current_user)):
     """Deletes a user's profile"""
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
 
@@ -94,7 +97,8 @@ def delete_user_profile(db: Session = Depends(get_db)):
 
 
 @router.put("/profile/change_password/", response_model=schemas.UserResponse)
-def update_user_password(password_change: schemas.PasswordChange, db: Session = Depends(get_db)):
+def update_user_password(password_change: schemas.PasswordChange, db: Session = Depends(get_db), 
+                         current_user: int = Depends(authorization.get_current_user)):
     """Updates a user's password"""
 
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
@@ -115,14 +119,16 @@ def update_user_password(password_change: schemas.PasswordChange, db: Session = 
 
 
 @router.get("/services", response_model=List[schemas.ServiceResponse])
-def get_services(db: Session = Depends(get_db)):
+def get_services(db: Session = Depends(get_db), 
+                 current_user = Depends(authorization.get_current_user)):
     """Retrieves all services"""
     services = db.query(models.Service).all()
     return services
 
 
 @router.get("/services/{service_id}", response_model=schemas.ServiceResponse)
-def get_service(service_id: int, db: Session = Depends(get_db)):
+def get_service(service_id: int, db: Session = Depends(get_db), 
+                current_user = Depends(authorization.get_current_user)):
 
     """Retrieves a specific service"""
     service = db.query(models.Service).filter(models.Service.service_id == service_id).first()
@@ -130,14 +136,16 @@ def get_service(service_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/stylists", response_model=List[schemas.StylistResponse])
-def get_stylists(db: Session = Depends(get_db)):
+def get_stylists(db: Session = Depends(get_db), 
+                 current_user = Depends(authorization.get_current_user)):
     """Retrieves all stylists"""
     stylists = db.query(models.Stylist).all()
 
 
 
 @router.get("/stylists/{stylist_id}", response_model=schemas.StylistResponse)
-def get_stylist(stylist_id: int, db: Session = Depends(get_db)):
+def get_stylist(stylist_id: int, db: Session = Depends(get_db), 
+                current_user = Depends(authorization.get_current_user)):
     """Retrieves a specific stylist"""
     stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
     return stylist
@@ -145,7 +153,9 @@ def get_stylist(stylist_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/bookings/{service_id}", response_model=schemas.BookingResponse)
-def create_service_booking(service_id: int, booking: schemas.BookingCreate, db: Session = Depends(get_db)):
+def create_service_booking(service_id: int, booking: schemas.BookingCreate, 
+                           db: Session = Depends(get_db), 
+                           current_user = Depends(authorization.get_current_user)):
 
     # Check if the service exists
     service = db.query(models.Service).filter(models.Service.id == booking.service_id).first()
@@ -174,5 +184,5 @@ def create_service_booking(service_id: int, booking: schemas.BookingCreate, db: 
 
 
  
-                # current_user = Depends(authorization.get_current_user)
+                
      
