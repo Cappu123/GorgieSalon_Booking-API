@@ -19,7 +19,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(),
     if user and helper_functions.verify_password(user_credentials.password, user.password):
         user = user
         role = user.role
-    
+            
     # Check in the Stylists table if not found in Admins
     user = db.query(models.Stylist).filter(models.Stylist.username == user_credentials.username).first()
     if user and helper_functions.verify_password(user_credentials.password, user.password):

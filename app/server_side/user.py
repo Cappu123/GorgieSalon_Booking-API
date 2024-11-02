@@ -115,6 +115,7 @@ def update_user_password(password_change: schemas.PasswordChange, db: Session = 
     # Hash and update the new password
     user.password = helper_functions.hash_password(password_change.new_password)
     db.commit()
+    return user
 
 
 
@@ -168,7 +169,7 @@ def create_service_booking(service_id: int, booking: schemas.BookingCreate,
     
     # Create a new booking
     new_booking = models.Booking(
-        #user_id=current_user.id,
+        user_id=current_user.id,
         service_id=booking.service_id,
         stylist_id=booking.stylist_id,
         appointment_time=booking.appointment_time,

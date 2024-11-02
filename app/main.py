@@ -14,9 +14,9 @@ app = FastAPI()
 
 
 app.include_router(user.router)
-#app.include_router(stylist.router)
+app.include_router(stylist.router)
 app.include_router(authentication.router)
-#app.include_router(admin.router)
+app.include_router(admin.router)
 
 
 
@@ -24,4 +24,5 @@ app.include_router(authentication.router)
 def homePage():
 
     return {"Hello": "Welcome to Gorgies"}
+
 

@@ -36,7 +36,6 @@ def verify_access_token(token: dict, credentials_exception):
         token_data = schemas.TokenData(username=username, role=role)
     except JWTError:
         raise credentials_exception
-    
     return token_data
     
 
@@ -64,5 +63,24 @@ def get_current_user(token: schemas.TokenData = Depends(oauth2_scheme), db: Sess
         raise credentials_exception
     
     return user
+
+
+
+def get_current_admin(db: Session = Depends(database.get_db), 
+                      token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    token_data = verify_access_token(token, credentials_exception)
+    
+    admin = db.query(models.Admin).filter(models.Admin.username == token_data.username).first()
+    
+    if admin is None:
+        raise credentials_exception
+
+    return admin
 
 

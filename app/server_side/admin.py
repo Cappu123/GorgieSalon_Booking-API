@@ -1,133 +1,139 @@
-# from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
-# from ..import schemas, models, helper_functions, authorization
-# from ..database import get_db
-# from sqlalchemy.orm import Session
-# from typing import List
+from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
+from ..import schemas, models, helper_functions, authorization
+from ..database import get_db
+from sqlalchemy.orm import Session
+from typing import List, Union
 
 
-# router = APIRouter(
-#     prefix="/admins",
-#     tags=['Admins']
-# )
+router = APIRouter(
+    prefix="/admins",
+    tags=['Admins']
+)
 
 
-# @router.post("/create_user", status_code=status.HTTP_201_CREATED, response_model=schemas.UserCreateResponse)
-# def Create_user(user: schemas.UserCreate, db: Session = Depends(get_db), 
-#                 current_user: int = Depends(authorization.get_current_user)):
-#     """Admin creates a new user"""
-#     try:
-#         # Check if a user with the same username or email already exists
-#         existing_user = db.query(models.User).filter(
-#             (models.User.username == user.username) | (models.User.email == user.email)
-#         ).first()
-
-#         if existing_user:
-#             raise HTTPException(
-#                 status_code=status.HTTP_400_BAD_REQUEST,
-#                 detail="User with this username or email already exists"
-#             )
-#         if current_user.role != "admin":
-#             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
-#                             detail="Can not perform the requested action, Unauthorized access")
-
-#         # Hash the password
-#         hashed_password = helper_functions.hash_password(user.password)
-
-#         # Prepare data to exclude fields not meant to be directly user-controlled (like 'role')
-#         user_data = user.dict
-#         user_data["password"] = hashed_password  # Add the hashed password manually
-
-#         # Create a new user instance with the filtered data
-#         new_user = models.User(**user_data)
-#         db.add(new_user)
-#         db.commit()
-#         db.refresh(new_user)
-
-#         return new_user
-
-#     except Exception as e:
-#         # Log the exception if using logging for better debugging
-#         print(f"An error occurred during signup: {e}")
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail="An error occurred while creating the user. Please try again later."
-#         )
+@router.post("/add_services", response_model=schemas.ServiceResponse)
+def add_services(service: schemas.ServiceCreate, 
+                 db: Session = Depends(get_db), 
+                 current_admin = Depends(authorization.get_current_admin)):
     
+    #check if service exists already
+    existing_service = db.query(models.Service).filter(models.Service.id == service.service_id)
+    if existing_service:
 
-# @router.delete("/delete_user/", status_code=status.HTTP_204_NO_CONTENT)
-# def delete_user_profile(db: Session = Depends(get_db), 
-#                         current_user: int = Depends(authorization.get_current_user)):
-#     """Admin deletes a user's profile"""
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this username or email already exists"
+            )
+    new_service = models.Service(**service.dict())
+    #ad the new service to the database
 
-#     user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    db.add(new_service)
+    db.commit()
+    db.refresh(new_service)
 
-#     if user is None:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-#                             detail=f"The requested user profile does not exist")
-#     db.delete(user)
-#     db.commit()
+    return new_service
+
+
+
+@router.post("/add_stylists", response_model=schemas.StylistResponse)
+def register_stylists(stylist: schemas.StylistCreate, 
+                   db: Session = Depends(get_db), 
+                   current_admin = Depends(authorization.get_current_admin)):
     
-#     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-
-# @router.get("/users", response_model=schemas.UserCreateResponse)
-# def view_all_users(db: Session = Depends(get_db), 
-#                      current_user: int = Depends(authorization.get_current_user)):
-#     """Admins can see all users"""
-#     user = db.query(models.User).all()
-#     return user
-
-
-
-# @router.post("/stylists", status_code=status.HTTP_200_OK, 
-#              response_model=List[schemas.StylistwithServicesResponse])
-
-# def list_stylists(db: Session = Depends(get_db), 
-#                   current_user: int = Depends(authorization.get_current_user)):
-#     """Admin can see all stylists(active, suspended, verified, non-verified)"""
-
-#     stylist = db.query(models.Stylist).all()
-#     return stylist
-
-
-
-# @router.post("/stylists", status_code=status.HTTP_200_OK, 
-#              response_model=List[schemas.StylistwithServicesResponse])
-
-# def list_stylists(db: Session = Depends(get_db), 
-#                   current_user: int = Depends(authorization.get_current_user)):
-#     """Admin can see all unverified stylists"""
-
-#     stylist = db.query(models.Stylist).filter_by(models.Stylist.verified == False)
-#     return stylist
-
-
-# @router.post("/stylists/verify/{stylist_id}", status_code=status.HTTP_200_OK)
-# def approve_stylist(stylist_id: int, db: Session = Depends(get_db), 
-#                     current_user: int = Depends(authorization.get_current_user)):
+    # Check if admin with the same username or email already exists
+    existing_stylist = db.query(models.Stylist).filter(
+        (models.Stylist.username == stylist.username) | 
+        (models.Stylist.email == stylist.email)
+    ).first()
     
-#     """Admins approve a stylist application."""
-#     stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
-#     if stylist is None:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-#                             detail="Stylist not found.")
-#     stylist.verified = True
-#     db.commit()
-#     return {"message": "Stylist approved successfully."}
-
-
-# @router.post("/stylists/suspend/{stylist_id}", status_code=status.HTTP_200_OK)
-# def approve_stylist(stylist_id: int, db: Session = Depends(get_db), 
-#                     current_user: int = Depends(authorization.get_current_user)):
+    if existing_stylist:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A stylist with this username or email already exists"
+        )
     
-#     """Admins can suspend stylist's account."""
-#     stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
-#     if stylist is None:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-#                             detail="Stylist not found.")
-#     stylist.is_active = False
-#     db.commit()
-#     return {"message": "Stylist approved successfully."}
+    # Create a new stylist instance
+    new_stylist = models.Admin(**stylist.dict())
 
+    # You may want to hash the password before saving
+    new_stylist.password = helper_functions.hash_password(stylist.password)  
+
+    # Add the new admin to the database
+    db.add(new_stylist)
+    db.commit()
+    db.refresh(new_stylist)
+
+    return schemas.AdminResponse(**new_stylist.__dict__)
+
+
+
+@router.post("/register_admin", response_model=schemas.AdminResponse)
+def register_admin(admin: schemas.AdminCreate, 
+                   db: Session = Depends(get_db), 
+                   current_admin = Depends(authorization.get_current_admin)):
+    
+    # Check if admin with the same username or email already exists
+    existing_admin = db.query(models.Admin).filter(
+        (models.Admin.username == admin.username) | 
+        (models.Admin.email == admin.email)
+    ).first()
+    
+    if existing_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Admin with this username or email already exists"
+        )
+    
+    # Create a new admin instance
+    new_admin = models.Admin(**admin.dict())
+
+    # You may want to hash the password before saving
+    new_admin.password = helper_functions.hash_password(admin.password)  
+
+    # Add the new admin to the database
+    db.add(new_admin)
+    db.commit()
+    db.refresh(new_admin)
+
+    return schemas.AdminResponse(**new_admin.__dict__)
+
+
+@router.get("/bookings", response_model=List[schemas.BookingResponse])
+def get_all_bookings(
+    db: Session = Depends(get_db),
+    current_admin: models.Admin = Depends(authorization.get_current_admin)  
+):
+    bookings = db.query(models.Booking).all()
+    if not bookings:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No bookings found."
+        )
+    return bookings
+
+
+
+@router.get("/users", response_model=schemas.UserResponse)
+def view_all_users(db: Session = Depends(get_db), 
+                     current_user: Union[models.Admin, models.Stylist, models.User] = Depends(authorization.get_current_user)):
+    """Admins can see all users"""
+
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Access denied, only admins can access.")
+    user = db.query(models.User).all()
+    return user
+
+
+
+@router.get("/stylists", response_model=List[schemas.StylistResponse])
+def view_all_users(db: Session = Depends(get_db), 
+                     current_user: Union[models.Admin, models.Stylist, models.User] = Depends(authorization.get_current_user)):
+    """Admins can see all stylists"""
+
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Access denied, only admins can access.")
+    stylist = db.query(models.Stylist).all()
+    return stylist
 

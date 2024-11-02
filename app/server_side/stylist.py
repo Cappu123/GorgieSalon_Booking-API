@@ -1,13 +1,42 @@
-# from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
-# from ..import schemas, models, helper_functions, authorization
-# from ..database import get_db
-# from sqlalchemy.orm import Session
+from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
+from ..import schemas, models, helper_functions, authorization
+from ..database import get_db
+from sqlalchemy.orm import Session
 
 
-# router = APIRouter(
-#     prefix="/stylists",
-#     tags=['Stylists']
-# )
+router = APIRouter(
+    prefix="/stylists",
+    tags=['Stylists']
+)
+
+@router.post("/bookings/{service_id}", response_model=schemas.BookingResponse)
+def create_service_booking(service_id: int, booking: schemas.BookingCreate, 
+                           db: Session = Depends(get_db), 
+                           current_user = Depends(authorization.get_current_user)):
+
+    # Check if the service exists
+    service = db.query(models.Service).filter(models.Service.id == booking.service_id).first()
+    if not service:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
+    
+    stylist = db.query(models.Stylist).filter(models.Stylist.id == booking.stylist_id).first()
+    if not stylist:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stylist not found")
+    
+    # Create a new booking
+    new_booking = models.Booking(
+        user_id=current_user.id,
+        service_id=booking.service_id,
+        stylist_id=booking.stylist_id,
+        appointment_time=booking.appointment_time,
+        status="pending"
+    )
+
+    db.add(new_booking)
+    db.commit()
+    db.refresh(new_booking)
+
+    return new_booking
 
 # @router.post("/signup", status_code=status.HTTP_201_CREATED, response_model=schemas.StylistCreateResponse)
 # def signup(stylist: schemas.StylistCreate, db: Session = Depends(get_db)):

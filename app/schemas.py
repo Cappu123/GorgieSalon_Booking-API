@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, time
 from enum import Enum
-from typing import List
+from typing import List, Literal
 
 #################################################
 
@@ -49,10 +49,12 @@ class PasswordChange(BaseModel):
     class Config:
         from_attributes = True
 
+
 ######################################################
 
 class StylistCreate(BaseModel):
     username: str
+    email: EmailStr
     password: str
     bio: str
     specialization: str
@@ -83,7 +85,7 @@ class ServiceResponse(BaseModel):
     duration: float
     price: float
     created_at: datetime
-    stylists: List[dict]
+    stylists: List[StylistResponse]
 
 
 
@@ -106,4 +108,20 @@ class BookingResponse(BookingCreate):
     class Config:
         from_attributes = True
 
+
+class BookingStatusUpdate(BaseModel):
+    status: Literal["accepted", "rejected"]
+
 ##########################################################
+
+class AdminCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+
+class AdminResponse(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    created_at: datetime 
+##############################################################
