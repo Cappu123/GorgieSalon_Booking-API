@@ -2,20 +2,22 @@
 
 The goal of this project is to create a backend system that will support a hair salon booking platform, streamlining appointment scheduling and service management.
 
+made based on [The documentation](https://fastapi.tiangolo.com/)
+
 ## Introduction:
 
 
 #### User Registration and Authentication
 
-#### User Account Management
+#### User Account Management(Basic CRUD Operations)
 
-#### Perform CRUD operations
+#### Admin can add services and stylists(Role base authentication)
 
-#### Stylists Registration and Authentication
+#### Users can navigate to each services and stylists
 
-#### Clients appointment booking
+#### Users can book
 
-#### User Profile management 
+#### Stylists can verify booking requests
 
 
 
@@ -36,7 +38,7 @@ Run it on your local computer using:
 ## Usage
 
 Try it out using the FastAPI interactive documentation
-on your local computer:
+on your local computer(localhost):
 `http://127.0.0.1:8000/docs`
 
 Setup environment variables to the database(Use Postgresql):
