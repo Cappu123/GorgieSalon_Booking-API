@@ -2,7 +2,8 @@
 
 The goal of this project is to create a backend system that will support a hair salon booking platform, streamlining appointment scheduling and service management.
 
-made based on [The documentation](https://fastapi.tiangolo.com/)
+### made based on [The documentation](https://fastapi.tiangolo.com/)
+### API Documentation [Documentation](https://cappu123.github.io/GorgieSalon_Booking-API/)
 
 ## Introduction:
 
