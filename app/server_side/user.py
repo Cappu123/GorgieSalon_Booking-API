@@ -119,68 +119,7 @@ def update_user_password(password_change: schemas.PasswordChange, db: Session = 
 
 
 
-@router.get("/services", response_model=List[schemas.ServiceResponse])
-def get_services(db: Session = Depends(get_db), 
-                 current_user = Depends(authorization.get_current_user)):
-    """Retrieves all services"""
-    services = db.query(models.Service).all()
-    return services
 
-
-@router.get("/services/{service_id}", response_model=schemas.ServiceResponse)
-def get_service(service_id: int, db: Session = Depends(get_db), 
-                current_user = Depends(authorization.get_current_user)):
-
-    """Retrieves a specific service"""
-    service = db.query(models.Service).filter(models.Service.service_id == service_id).first()
-    return service
-
-
-@router.get("/stylists", response_model=List[schemas.StylistResponse])
-def get_stylists(db: Session = Depends(get_db), 
-                 current_user = Depends(authorization.get_current_user)):
-    """Retrieves all stylists"""
-    stylists = db.query(models.Stylist).all()
-
-
-
-@router.get("/stylists/{stylist_id}", response_model=schemas.StylistResponse)
-def get_stylist(stylist_id: int, db: Session = Depends(get_db), 
-                current_user = Depends(authorization.get_current_user)):
-    """Retrieves a specific stylist"""
-    stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
-    return stylist
-
-
-
-@router.post("/bookings/{service_id}", response_model=schemas.BookingResponse)
-def create_service_booking(service_id: int, booking: schemas.BookingCreate, 
-                           db: Session = Depends(get_db), 
-                           current_user = Depends(authorization.get_current_user)):
-
-    # Check if the service exists
-    service = db.query(models.Service).filter(models.Service.id == booking.service_id).first()
-    if not service:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
-    
-    stylist = db.query(models.Stylist).filter(models.Stylist.id == booking.stylist_id).first()
-    if not stylist:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stylist not found")
-    
-    # Create a new booking
-    new_booking = models.Booking(
-        user_id=current_user.id,
-        service_id=booking.service_id,
-        stylist_id=booking.stylist_id,
-        appointment_time=booking.appointment_time,
-        status="pending"
-    )
-
-    db.add(new_booking)
-    db.commit()
-    db.refresh(new_booking)
-
-    return new_booking
 
 
 
