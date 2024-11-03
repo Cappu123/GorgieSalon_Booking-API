@@ -14,7 +14,7 @@ router = APIRouter(
 @router.post("/add_services", response_model=schemas.ServiceResponse)
 def add_services(service: schemas.ServiceCreate, 
                  db: Session = Depends(get_db), 
-                 current_admin = Depends(authorization.get_current_admin)):
+                 current_admin:schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
     
     #check if service exists already
     existing_service = db.query(models.Service).filter(models.Service.id == service.service_id)
@@ -38,7 +38,7 @@ def add_services(service: schemas.ServiceCreate,
 @router.post("/add_stylists", response_model=schemas.StylistResponse)
 def register_stylists(stylist: schemas.StylistCreate, 
                    db: Session = Depends(get_db), 
-                   current_admin = Depends(authorization.get_current_admin)):
+                   current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
     
     # Check if admin with the same username or email already exists
     existing_stylist = db.query(models.Stylist).filter(
@@ -70,7 +70,7 @@ def register_stylists(stylist: schemas.StylistCreate,
 @router.post("/register_admin", response_model=schemas.AdminResponse)
 def register_admin(admin: schemas.AdminCreate, 
                    db: Session = Depends(get_db), 
-                   current_admin = authorization.get_current_admin):
+                   current_admin: schemas.UserValidationSchema = authorization.get_current_admin):
     
     # Check if admin with the same username or email already exists
     existing_admin = db.query(models.Admin).filter(
@@ -101,7 +101,7 @@ def register_admin(admin: schemas.AdminCreate,
 @router.get("/bookings", response_model=List[schemas.BookingResponse])
 def get_all_bookings(
     db: Session = Depends(get_db),
-    current_admin = Depends(authorization.get_current_admin)  
+    current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)  
 ):
     
     bookings = db.query(models.Booking).all()
@@ -116,7 +116,7 @@ def get_all_bookings(
 
 @router.get("/users", response_model=schemas.UserResponse)
 def view_all_users(db: Session = Depends(get_db), 
-                     current_admin = Depends(authorization.get_current_admin)):
+                     current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
     """Admins can see all users"""
 
     users = db.query(models.User).all()
@@ -126,7 +126,7 @@ def view_all_users(db: Session = Depends(get_db),
 
 @router.get("/stylists", response_model=List[schemas.StylistResponse])
 def view_all_users(db: Session = Depends(get_db), 
-                   current_admin = Depends(authorization.get_current_admin)):
+                   current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
     """Admins can see all stylists"""
 
     stylists = db.query(models.Stylist).all()

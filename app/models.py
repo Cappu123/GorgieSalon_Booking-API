@@ -108,22 +108,4 @@ class Review(Base):
     comments = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
 
-    # Relationship
-    #appointment = relationship("Appointment", back_populates="review")
 
-# class Appointment(Base):
-#     """Appointments model"""
-#     __tablename__ = 'appointments'
-
-#     id = Column(Integer, primary_key=True, nullable=False)
-#     stylist_id = Column(Integer, ForeignKey('stylists.id'))
-#     client_id = Column(Integer, ForeignKey('users.id'))
-#     appointment_time = Column(TIMESTAMP(timezone=True))
-#     duration = Column(Integer, nullable=False)
-#     status = Column(String)
-#     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
-
-#     # Relationships
-#     #stylist = relationship("Stylist", back_populates="appointments")
-#     #client = relationship("User", back_populates="appointments")
-#     #review = relationship("Review", back_populates="appointment", uselist=False)

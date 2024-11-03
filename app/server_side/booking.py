@@ -13,7 +13,7 @@ router = APIRouter(
 @router.post("/", response_model=schemas.BookingResponse, 
              status_code=status.HTTP_201_CREATED)
 def create_service_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db), 
-                           current_user = Depends(authorization.get_current_user)):
+                           current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
     """Create service booking with a stylist"""
     
     # Check if the service exists
@@ -70,10 +70,10 @@ def create_service_booking(booking: schemas.BookingCreate, db: Session = Depends
 
 
 
-@router.post("/", response_model=schemas.BookingResponse)
+@router.post("/{booking_id}", response_model=schemas.BookingResponse)
 def accept_booking(booking_id: int, booking: schemas.BookingCreate, 
                            db: Session = Depends(get_db), 
-                           current_stylist = Depends(authorization.get_current_stylist)):
+                           current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
     """Stylist accepts booking request"""
 
     # Check if the service exists
@@ -116,9 +116,9 @@ def accept_booking(booking_id: int, booking: schemas.BookingCreate,
 
 
 
-@router.post("/{booking_id}", response_model=schemas.BookingResponse)
+@router.post("/", response_model=schemas.BookingResponse)
 def reject_booking(booking_id: int, db: Session = Depends(get_db), 
-                   current_stylist = Depends(authorization.get_current_stylist)
+                   current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)
 ):
     # Check if the booking exists
     booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
@@ -153,7 +153,7 @@ def reject_booking(booking_id: int, db: Session = Depends(get_db),
 
 @router.get("/", response_model=List[schemas.BookingResponse])
 def get_booking(db: Session = Depends(get_db),
-    current_user: models.Admin = Depends(authorization.get_current_admin)  
+    current_user: schemas.UserValidationSchema = Depends(authorization.get_current_admin)  
 ):
     bookings = db.query(models.Booking).all()
     if not bookings:

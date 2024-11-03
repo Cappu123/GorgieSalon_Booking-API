@@ -47,9 +47,9 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         )
     
 
-@router.get("/profile/{user_id}", response_model=schemas.UserResponse)
+@router.get("/profile/", response_model=schemas.UserResponse)
 def get_user_profile(user_id: int, db: Session = Depends(get_db), 
-                     current_user = Depends(authorization.get_current_user)):
+                     current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
     """Users retrieving a specific user's(client) info"""
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -63,7 +63,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db),
 @router.put("/profile/update/", response_model=schemas.UserResponse)
 def update_user_profile(updated_profile: schemas.UserCreate, 
                         db: Session = Depends(get_db), 
-                        current_user = Depends(authorization.get_current_user)):
+                        current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
     """Updates a user's profile"""
 
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
@@ -82,7 +82,7 @@ def update_user_profile(updated_profile: schemas.UserCreate,
 
 @router.delete("/profile/delete/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user_profile(db: Session = Depends(get_db), 
-                        current_user = Depends(authorization.get_current_user)):
+                        current_user:schemas.UserValidationSchema = Depends(authorization.get_current_user)):
     """Deletes a user's profile"""
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
 
@@ -98,7 +98,7 @@ def delete_user_profile(db: Session = Depends(get_db),
 
 @router.put("/profile/change_password/", response_model=schemas.UserResponse)
 def update_user_password(password_change: schemas.PasswordChange, db: Session = Depends(get_db), 
-                         current_user: int = Depends(authorization.get_current_user)):
+                         current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
     """Updates a user's password"""
 
     user = db.query(models.User).filter(models.User.id == current_user.id).first()

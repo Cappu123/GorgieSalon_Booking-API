@@ -125,3 +125,8 @@ class AdminResponse(BaseModel):
     email: EmailStr
     created_at: datetime 
 ##############################################################
+class UserValidationSchema(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    role: str = "admin"

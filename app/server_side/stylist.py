@@ -14,33 +14,61 @@ router = APIRouter(
 
 @router.get("/stylists", response_model=List[schemas.StylistResponse])
 def get_stylists(db: Session = Depends(get_db), 
-                 current_user = Depends(authorization.get_current_user)):
+                 current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
     """Retrieves all stylists"""
-    stylists = db.query(models.Stylist).all()
+
+    # Query all stylists from the database
+    try:
+        stylists = db.query(models.Stylist).all()
+
+        # Check if any stylists were found
+        if not stylists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No stylists found"
+                )
+
+        return stylists
+
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail="No stylists Found")
 
 
 
-@router.get("/stylists/{stylist_id}", response_model=schemas.StylistResponse)
+
+
+@router.get("/{stylist_id}", response_model=schemas.StylistResponse)
 def get_stylist(stylist_id: int, db: Session = Depends(get_db), 
-                current_user = Depends(authorization.get_current_user)):
+                current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
     """Retrieves a specific stylist"""
-    stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
-    return stylist
+    try:
+        stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
+        # Check if stylist was found
+        if not stylist:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                                detail=f"Stylist with ID {stylist_id} not found")
+        return stylist
+    except Exception:
+        # Catch any unexpected errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving the stylist")
 
 
-
-@router.get("/dashboard/{stylist_id}", 
+@router.get("/dashboard/", 
             status_code=status.HTTP_200_OK)
 def stylist_dashboard(stylist_id: int, db: Session = Depends(get_db), 
-                      current_user = Depends(authorization.get_current_user)):
+                      current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
     """Retrieves Stylists dashboard"""
+    
     stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
 
     if stylist is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"The requested stylist profile does not exist")
     
-    if stylist.id != current_user.id:
+    if stylist.id != current_stylist.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
                             detail="Cannot perform the requested action, Unauthorized access")
 

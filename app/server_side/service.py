@@ -9,7 +9,7 @@ router = APIRouter(
     tags=['Services']
 )
 
-@router.get("/services", response_model=List[schemas.ServiceResponse])
+@router.get("/", response_model=List[schemas.ServiceResponse])
 def get_services(db: Session = Depends(get_db), 
                  current_user = Depends(authorization.get_current_user)):
     """Retrieves all services"""
@@ -17,7 +17,7 @@ def get_services(db: Session = Depends(get_db),
     return services
 
 
-@router.get("/services/{service_id}", response_model=schemas.ServiceResponse)
+@router.get("/{service_id}", response_model=schemas.ServiceResponse)
 def get_service(service_id: int, db: Session = Depends(get_db), 
                 current_user = Depends(authorization.get_current_user)):
 
