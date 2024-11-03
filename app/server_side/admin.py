@@ -22,7 +22,7 @@ def add_services(service: schemas.ServiceCreate,
 
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this username or email already exists"
+                detail="Service with this id already exists"
             )
     new_service = models.Service(**service.dict())
     #ad the new service to the database
@@ -70,7 +70,7 @@ def register_stylists(stylist: schemas.StylistCreate,
 @router.post("/register_admin", response_model=schemas.AdminResponse)
 def register_admin(admin: schemas.AdminCreate, 
                    db: Session = Depends(get_db), 
-                   current_admin = Depends(authorization.get_current_admin)):
+                   current_admin = authorization.get_current_admin):
     
     # Check if admin with the same username or email already exists
     existing_admin = db.query(models.Admin).filter(
@@ -101,8 +101,9 @@ def register_admin(admin: schemas.AdminCreate,
 @router.get("/bookings", response_model=List[schemas.BookingResponse])
 def get_all_bookings(
     db: Session = Depends(get_db),
-    current_admin: models.Admin = Depends(authorization.get_current_admin)  
+    current_admin = Depends(authorization.get_current_admin)  
 ):
+    
     bookings = db.query(models.Booking).all()
     if not bookings:
         raise HTTPException(
@@ -115,25 +116,19 @@ def get_all_bookings(
 
 @router.get("/users", response_model=schemas.UserResponse)
 def view_all_users(db: Session = Depends(get_db), 
-                     current_user: Union[models.Admin, models.Stylist, models.User] = Depends(authorization.get_current_user)):
+                     current_admin = Depends(authorization.get_current_admin)):
     """Admins can see all users"""
 
-    if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
-                            detail="Access denied, only admins can access.")
-    user = db.query(models.User).all()
-    return user
+    users = db.query(models.User).all()
+    return users
 
 
 
 @router.get("/stylists", response_model=List[schemas.StylistResponse])
 def view_all_users(db: Session = Depends(get_db), 
-                     current_user: Union[models.Admin, models.Stylist, models.User] = Depends(authorization.get_current_user)):
+                   current_admin = Depends(authorization.get_current_admin)):
     """Admins can see all stylists"""
 
-    if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
-                            detail="Access denied, only admins can access.")
-    stylist = db.query(models.Stylist).all()
-    return stylist
+    stylists = db.query(models.Stylist).all()
+    return stylists
 

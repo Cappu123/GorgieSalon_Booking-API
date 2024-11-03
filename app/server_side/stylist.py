@@ -45,3 +45,4 @@ def stylist_dashboard(stylist_id: int, db: Session = Depends(get_db),
                             detail="Cannot perform the requested action, Unauthorized access")
 
     return "stylist dashboard"
+

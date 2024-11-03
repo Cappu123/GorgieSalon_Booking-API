@@ -39,7 +39,8 @@ def verify_access_token(token: dict, credentials_exception):
     return token_data
     
 
-def get_current_user(token: schemas.TokenData = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+def get_current_user(token: schemas.TokenData = Depends(oauth2_scheme), 
+                     db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
                                           detail=f"could not validate credentials", 
                                           headers={"WWW-Authenticate": "Bearer"})
@@ -66,21 +67,37 @@ def get_current_user(token: schemas.TokenData = Depends(oauth2_scheme), db: Sess
 
 
 
-def get_current_admin(db: Session = Depends(database.get_db), 
-                      token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
-    token_data = verify_access_token(token, credentials_exception)
-    
-    admin = db.query(models.Admin).filter(models.Admin.username == token_data.username).first()
-    
-    if admin is None:
-        raise credentials_exception
+def get_current_admin(token: schemas.TokenData = Depends(oauth2_scheme), 
+                      db: Session = Depends(database.get_db)):
+      credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                                          detail=f"could not validate credentials", 
+                                          headers={"WWW-Authenticate": "Bearer"})
+      
+      token = verify_access_token(token, credentials_exception)
 
-    return admin
+      admin = db.query(models.Admin).filter(
+        models.Admin.username == token.username, 
+        models.Admin.role == token.role).first()
+      
+      if not admin:
+        raise credentials_exception
+      return admin
+
+
+
+def get_current_stylist(token: schemas.TokenData = Depends(oauth2_scheme), 
+                      db: Session = Depends(database.get_db)):
+      credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
+                                          detail=f"could not validate credentials", 
+                                          headers={"WWW-Authenticate": "Bearer"})
+      token = verify_access_token(token, credentials_exception)
+
+      stylist = db.query(models.Stylist).filter(
+        models.Stylist.username == token.username, 
+        models.Stylist.role == token.role).first()
+      
+      if not stylist:
+        raise credentials_exception
+      return stylist
 
 
