@@ -85,19 +85,20 @@ def accept_booking(booking_id: int, booking: schemas.BookingCreate,
     if not stylist:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stylist not found")
     
+
+    # Ensure that the booking belongs to the current stylist
+    if booking.stylist_id != current_stylist.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to manage this booking"
+        )
+
     # Check if the booking exists
     booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
             detail="Booking not found"
-        )
-
-    # Ensure that the booking belongs to the current stylist
-    if booking.stylist_id != current_stylist.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="You are not authorized to manage this booking"
         )
 
     # Check if the booking is already confirmed or rejected
@@ -118,8 +119,8 @@ def accept_booking(booking_id: int, booking: schemas.BookingCreate,
 
 @router.post("/", response_model=schemas.BookingResponse)
 def reject_booking(booking_id: int, db: Session = Depends(get_db), 
-                   current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)
-):
+                   current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
+    """Stylist Rejects Booking"""
     # Check if the booking exists
     booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if not booking:
@@ -127,11 +128,11 @@ def reject_booking(booking_id: int, db: Session = Depends(get_db),
             status_code=status.HTTP_404_NOT_FOUND, 
             detail="Booking not found"
         )
-
+    
     # Ensure that the booking belongs to the current stylist
     if booking.stylist_id != current_stylist.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="You are not authorized to manage this booking"
         )
 
@@ -151,14 +152,47 @@ def reject_booking(booking_id: int, db: Session = Depends(get_db),
 
 
 
-@router.get("/", response_model=List[schemas.BookingResponse])
-def get_booking(db: Session = Depends(get_db),
-    current_user: schemas.UserValidationSchema = Depends(authorization.get_current_admin)  
-):
-    bookings = db.query(models.Booking).all()
-    if not bookings:
+
+@router.post("/complete/{booking_id}", response_model=schemas.BookingResponse)
+def complete_booking(booking_id: int, db: Session = Depends(get_db), 
+                     current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
+    # Check if the booking exists
+    booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
+    if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No bookings found."
+            detail="Booking not found"
         )
+
+    # Ensure that the booking belongs to the current stylist
+    if booking.stylist_id != current_stylist.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to manage this booking"
+        )
+
+    # Check if the booking is in a valid state to be completed
+    if booking.status != "confirmed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Booking must be confirmed before it can be completed"
+        )
+
+    # Update the booking status to completed
+    booking.status = "completed"
+    db.commit()
+    db.refresh(booking)
+
+    return booking
+
+
+
+@router.get("/", response_model=List[schemas.BookingResponse])
+def get_bookings(db: Session = Depends(get_db),
+    current_user: schemas.UserValidationSchema = Depends(authorization.get_current_admin)  
+):
+    bookings = db.query(models.Booking).filter(models.Booking.stylist_id == current_user.id)
+    if not bookings:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No bookings found.")
     return bookings
+

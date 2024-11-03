@@ -67,10 +67,10 @@ def register_stylists(stylist: schemas.StylistCreate,
 
 
 
-@router.post("/register_admin", response_model=schemas.AdminResponse)
+@router.post("/create_admin", response_model=schemas.AdminResponse)
 def register_admin(admin: schemas.AdminCreate, 
                    db: Session = Depends(get_db), 
-                   current_admin: schemas.UserValidationSchema = authorization.get_current_admin):
+                   current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
     
     # Check if admin with the same username or email already exists
     existing_admin = db.query(models.Admin).filter(
@@ -83,11 +83,10 @@ def register_admin(admin: schemas.AdminCreate,
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Admin with this username or email already exists"
         )
-    
     # Create a new admin instance
     new_admin = models.Admin(**admin.dict())
 
-    # You may want to hash the password before saving
+    # hash the password before saving
     new_admin.password = helper_functions.hash_password(admin.password)  
 
     # Add the new admin to the database

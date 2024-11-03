@@ -14,9 +14,10 @@ router = APIRouter(
 
 @router.get("/stylists", response_model=List[schemas.StylistResponse])
 def get_stylists(db: Session = Depends(get_db), 
-                 current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
+                 current_stylist: schemas.UserValidationSchema = 
+                 Depends(authorization.get_current_stylist)):
     """Retrieves all stylists"""
-
+    
     # Query all stylists from the database
     try:
         stylists = db.query(models.Stylist).all()
@@ -33,9 +34,6 @@ def get_stylists(db: Session = Depends(get_db),
     except Exception:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail="No stylists Found")
-
-
-
 
 
 @router.get("/{stylist_id}", response_model=schemas.StylistResponse)
@@ -61,7 +59,7 @@ def get_stylist(stylist_id: int, db: Session = Depends(get_db),
 def stylist_dashboard(stylist_id: int, db: Session = Depends(get_db), 
                       current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
     """Retrieves Stylists dashboard"""
-    
+
     stylist = db.query(models.Stylist).filter(models.Stylist.id == stylist_id).first()
 
     if stylist is None:
