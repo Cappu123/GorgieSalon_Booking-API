@@ -57,7 +57,7 @@ class Service(Base):
     __tablename__ = 'services'
 
     id = Column(Integer, primary_key=True, index=True)
-    service_id = Column(Integer, nullable=False)
+    service_id = Column(Integer, nullable=False, unique=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=False)  
     duration = Column(Integer, nullable=False)
