@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=schemas.BookingResponse, 
+@router.post("/create", response_model=schemas.BookingResponse, 
              status_code=status.HTTP_201_CREATED)
 def create_service_booking(booking: schemas.BookingCreate, db: Session = Depends(get_db), 
                            current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
@@ -70,7 +70,7 @@ def create_service_booking(booking: schemas.BookingCreate, db: Session = Depends
 
 
 
-@router.post("/{booking_id}", response_model=schemas.BookingResponse)
+@router.post("/accept/{booking_id}", response_model=schemas.BookingResponse)
 def accept_booking(booking_id: int, booking: schemas.BookingCreate, 
                            db: Session = Depends(get_db), 
                            current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
@@ -117,7 +117,7 @@ def accept_booking(booking_id: int, booking: schemas.BookingCreate,
 
 
 
-@router.post("/", response_model=schemas.BookingResponse)
+@router.post("/reject/{booking_id}", response_model=schemas.BookingResponse)
 def reject_booking(booking_id: int, db: Session = Depends(get_db), 
                    current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
     """Stylist Rejects Booking"""

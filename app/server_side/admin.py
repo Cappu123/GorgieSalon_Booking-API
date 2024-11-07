@@ -74,21 +74,26 @@ def register_stylists(stylist: schemas.StylistCreate,
             )
         
         # Check if all services provided by the stylist are valid
-        for service_id in stylist.service_id:
-            valid_service = db.query(models.Service).filter(
-                models.Service.service_id == service_id).first()
-            
-            if not valid_service:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Service with ID {service_id} is not available"
-                )
+        valid_services = db.query(models.Service).filter(
+            models.Service.service_id.in_(stylist.service_id)
+        ).all()
+
+        # Extract valid service IDs from the results
+        valid_service_ids = {service.service_id for service in valid_services}
+
+        # Confirm all provided service IDs are valid
+        if not set(stylist.service_id).issubset(valid_service_ids):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="One or more provided services are not available"
+            )
     
         # hash the password before saving
         stylist.password = helper_functions.hash_password(stylist.password)  
-
+        
         # Create a new stylist instance
-        new_stylist = models.Stylist(**stylist.dict())
+        stylist.service_id
+        new_stylist = models.Stylist(**stylist.dict(), services = list(valid_services))
 
         # Add the new admin to the database
         db.add(new_stylist)

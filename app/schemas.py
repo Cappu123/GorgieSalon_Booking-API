@@ -58,16 +58,8 @@ class StylistCreate(BaseModel):
     password: str
     bio: str
     specialization: str
-    service_id: List[int] #List of serivces.id
+    service_id: List[int] #List of serivces.service_id
 
-
-class StylistResponse(BaseModel):
-    id: int
-    username: str
-    services: List[dict]
-
-
-#######################################################
 
 class ServiceCreate(BaseModel):
     service_id: int
@@ -75,6 +67,18 @@ class ServiceCreate(BaseModel):
     description: str
     duration: float
     price: float
+
+
+#######################################################
+
+
+class StylistResponse(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    bio: str
+    services: List[ServiceCreate]
+
 
 
 class ServiceResponse(BaseModel):

@@ -5,6 +5,8 @@ from sqlalchemy.orm import relationship
 from enum import Enum
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from typing import List
+from sqlalchemy.dialects.postgresql import ARRAY
 
 
 class User(Base):
@@ -40,7 +42,8 @@ class Stylist(Base):
     role = Column(String, default="stylist", nullable=False)
     bio = Column(Text)
     specialization = Column(String)
-    verified = Column(Boolean, default=False)
+    service_id = Column(ARRAY(Integer), nullable=False, unique=True)
+    active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), 
                         nullable=False, server_default=text('now()'))
 
