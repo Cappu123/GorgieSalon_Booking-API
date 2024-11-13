@@ -11,8 +11,7 @@ router = APIRouter(
 )
 
 @router.get("/", response_model=List[schemas.ServiceResponse])
-def get_services(db: Session = Depends(get_db), 
-                 current_user = Depends(authorization.get_current_user)):
+def get_services(db: Session = Depends(get_db)):
     """Retrieves all services"""
     services = db.query(models.Service).options(joinedload(models.Service.stylists)).all()
 
