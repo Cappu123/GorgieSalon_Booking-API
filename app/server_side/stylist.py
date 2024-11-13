@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
+from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter, Query
 from ..import schemas, models, helper_functions, authorization
 from ..database import get_db
 from sqlalchemy.orm import Session, selectinload
 from typing import List
-
+from sqlalchemy import func, label
 
 router = APIRouter(
     prefix="/stylists",
@@ -12,11 +12,12 @@ router = APIRouter(
 
 
 
-@router.get("/", response_model=List[schemas.StylistResponse])
+@router.get("/stylists", response_model=List[schemas.StylistResponse])
 def get_stylists(db: Session = Depends(get_db), 
                  current_stylist: schemas.UserValidationSchema = 
                  Depends(authorization.get_current_user)):
     """Retrieves all stylists"""
+    
     
     # Query all stylists from the database
     try:
@@ -36,6 +37,7 @@ def get_stylists(db: Session = Depends(get_db),
                             detail="No stylists Found")
 
 
+
 @router.get("/{stylist_id}", response_model=schemas.StylistResponse)
 def get_stylist(stylist_id: int, db: Session = Depends(get_db), 
                 current_stylist: schemas.UserValidationSchema = 
@@ -50,38 +52,41 @@ def get_stylist(stylist_id: int, db: Session = Depends(get_db),
                             detail=f"Stylist with ID {stylist_id} not found")
     return stylist
 
+@router.put("/profile/change_password/", response_model=schemas.StylistResponse)
+def update_user_password(password_change: schemas.PasswordChange, db: Session = Depends(get_db), 
+                         current_stylist: schemas.UserValidationSchema = Depends(authorization.get_current_stylist)):
+    """Updates a user's password"""
 
+    # Find the user in the database
+    stylist = db.query(models.Stylist).filter(models.Stylist.id == current_stylist.id).first()
 
-@router.post("/stylists_filtered", response_model=List[schemas.StylistResponse])
-def filter_stylists(stylist_filter: schemas.StylistFilter, 
-                    db: Session = Depends(get_db), current_user: schemas.UserValidationSchema = 
-                    Depends(authorization.get_current_user)):
-    try:
-        query = db.query(models.Stylist)#Base query before filtering
-
-        # Apply filters if they are provided
-        if stylist_filter.service_id:
-            query = query.join(models.Stylist.services).filter(models.Service.service_id == stylist_filter.service_id)
-
-
-        if stylist_filter.specialization:
-            query = query.filter(models.Stylist.specialization.ilike(f"%{stylist_filter.specialization}%"))
-
-        if stylist_filter.average_rating:
-            query = query.filter(models.Stylist.rating >= stylist_filter.rating)
-
-        # Apply pagination
-        stylists = query.limit(stylist_filter.limit).offset(stylist_filter.offset).all()
-    
-        return stylists
-    except Exception as e:
-        db.rollback()
-        print(f"Database error: {e}")
-
-    raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while retrieving stylists. Please try again later."
+    if not stylist:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail="User not found")
+        
+    if stylist.id != current_stylist.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access"
         )
+
+    # Verify old password
+    if not helper_functions.verify_password(password_change.old_password, stylist.password):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Old password is incorrect")
+
+    try:
+        # Hash and update the new password
+        stylist.password = helper_functions.hash_password(password_change.new_password)
+        db.commit()
+        return stylist
+
+    except Exception as e:
+        db.rollback()  # Roll back any changes if an error occurs
+        print("Database_error: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while changing your password. Please try again later.")
+
 
 
 @router.get("/dashboard/", status_code=status.HTTP_200_OK)
@@ -108,4 +113,5 @@ def stylist_dashboard(db: Session = Depends(get_db),
         "Dashboard of": current_stylist.username
     }
     
+
 

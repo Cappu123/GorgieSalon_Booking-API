@@ -203,8 +203,12 @@ def update_booking(booking_id: int, updated_booking: schemas.BookingUpdate,
         )
     
     # Update booking details
+    if booking.status == "completed" or booking.status == "confirmed":
+        raise HTTPException(status=status.HTTP_400_BAD_REQUEST, 
+                            details = "Booking is already confirmed or completed. Please try to create a new booking")
+    
     booking.appointment_time = updated_booking.appointment_time or booking.appointment_time
-    booking.status = updated_booking.status or booking.status
+    booking.status = booking.status
 
     db.commit()
     db.refresh(booking)
@@ -366,7 +370,7 @@ def complete_booking(booking_id: int, db: Session = Depends(get_db),
     if booking.stylist_id != current_stylist.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to manage this booking"
+            detail="Not authorized to manage this booking"
         )
 
     # Check if the booking is already completed

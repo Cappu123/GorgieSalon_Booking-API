@@ -109,6 +109,7 @@ class Review(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     stylist_id = Column(Integer, ForeignKey("stylists.id"), nullable=False)
     rating = Column(Integer)  # Rating out of 5
+    review_text = Column(String)
     comments = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
 

@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 
-@router.post("/create_services", response_model=List[schemas.ServiceResponse])
+@router.post("/create_services", response_model=List[schemas.ServiceResponse], status_code=status.HTTP_201_CREATED)
 def create_services(
     services: List[schemas.ServiceCreate],  
     db: Session = Depends(get_db),
@@ -74,7 +74,7 @@ def create_services(
 
 
 
-@router.put("/update_service", response_model=schemas.ServiceResponse)
+@router.put("/update_service", response_model=schemas.ServiceResponse, status_code=status.HTTP_201_CREATED)
 def update_service(service_id: int, service_data: schemas.ServiceUpdate, 
                    db: Session = Depends(get_db), current_admin: schemas.UserValidationSchema = 
                    Depends(authorization.get_current_admin)):

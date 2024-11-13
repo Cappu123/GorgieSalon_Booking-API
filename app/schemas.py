@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, condecimal
 from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Literal, Optional
@@ -148,14 +148,27 @@ class StylistUpdate(BaseModel):
     class Config:
         from_attributes = True
 
-class StylistFilter(BaseModel):
-    service_id: Optional[int] = None
-    specialization: Optional[str] = None
-    average_rating: Optional[float] = None
+
+class StylistByRating(BaseModel):
+    average_rating: float
     limit: int = 10
     offset: int = 0
 
 
+
+class StylistFilteredResponse(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    bio: str
+    specialization: str
+    average_rating: str
+    limit: int = 10
+    offset: int = 0
+    services: List[ServiceResponse]  # This represents the related services for each stylist
+
+    class Config:
+        from_attributes = True
 ######################################################
 
 class BookingCreate(BaseModel):
@@ -219,8 +232,30 @@ class AdminResponse(BaseModel):
     email: EmailStr
     created_at: datetime 
 ##############################################################
+
 class UserValidationSchema(BaseModel):
     id: int
     username: str
     email: EmailStr
     role: str = "admin"
+
+#########################################################
+
+class ReviewCreate(BaseModel):
+    stylist_id: int
+    rating: condecimal(ge=1, le=5)  # type: ignore # Ensures the rating is between 1 and 5
+    review_text: Optional[str] = None  # Optional text review
+
+    class Config:
+        from_attributes = True
+
+class ReviewResponse(BaseModel):
+    id: int
+    user_id: int
+    stylist_id: int
+    rating: float
+    created_at: datetime
+    review_text: Optional[str] = None
+
+    class Config:
+        from_attributes = True

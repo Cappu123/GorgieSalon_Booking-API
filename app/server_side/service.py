@@ -15,15 +15,19 @@ def get_services(db: Session = Depends(get_db)):
     """Retrieves all services"""
     services = db.query(models.Service).options(joinedload(models.Service.stylists)).all()
 
+    if not services:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No service found"
+        )
     return services
 
 
 @router.get("/{service_id}", response_model=schemas.ServiceResponse)
 def get_service(
     service_id: int,
-    db: Session = Depends(get_db),
-    current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)
-):
+    db: Session = Depends(get_db)):
+
     # Check if the service exists in the database
     service = db.query(models.Service).filter(models.Service.service_id == service_id).first()
 
