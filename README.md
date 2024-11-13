@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-The Stylist Booking API is a web service designed to connect users with professional stylists. Users can browse and book appointments with stylists based on their specialization, view stylist profiles, and leave ratings and reviews. Stylists can list their services and manage their bookings, enabling a seamless experience for both users and stylists. The project aims to provide a scalable backend solution for managing stylist services, bookings, reviews, and user authentication.
+The **GorgiSalon Booking API** is a web service designed to connect users with professional stylists. Users can browse and book appointments with stylists based on their specialization, view stylist profiles, and leave ratings and reviews. Stylists can list their services and manage their bookings, enabling a seamless experience for both users and stylists. The project aims to provide a scalable backend solution for managing stylist services, bookings, reviews, and user authentication.
 
 ## Core Features
 1. **User Registration and Profile Management:**
