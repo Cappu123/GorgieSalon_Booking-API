@@ -19,8 +19,8 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(),
     if user:
         if helper_functions.verify_password(user_credentials.password, user.password):
             role = user.role
-    else:
-        raise HTTPException(
+        else:       
+            raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials",
                 headers={"WWW-Authenticate": "Bearer"},
@@ -42,7 +42,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(),
     # Check in the Clients table if not found in Admins or Stylists
     if not user:
         user = db.query(models.User).filter(models.User.username == user_credentials.username).first()
-        if user:
+        if user:        
             if helper_functions.verify_password(user_credentials.password, user.password):
                 role = user.role
             else:

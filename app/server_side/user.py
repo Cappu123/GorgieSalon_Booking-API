@@ -48,51 +48,95 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     
 
 @router.get("/profile/", response_model=schemas.UserResponse)
-def get_user_profile(user_id: int, db: Session = Depends(get_db), 
+def get_user_profile(db: Session = Depends(get_db), 
                      current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
-    """Users retrieving a specific user's(client) info"""
+    """Users retrieving """
+    try:
+        user = db.query(models.User).filter(models.User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                            detail=f"user does not exist")
+        
+        if user.id != current_user.id:
+            raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access"
+        )
 
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                            detail=f"user with id: {user_id} does not exist")
-    return user
+        return user
+    
+    except Exception as e:
+        db.rollback()  # Roll back any changes if an error occurs
+        print("Database_error: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while updating your profile. Please try again later.")
+
+        
 
 
 
 @router.put("/profile/update/", response_model=schemas.UserResponse)
-def update_user_profile(updated_profile: schemas.UserCreate, 
+def update_user_profile(updated_profile: schemas.UserUpdate, 
                         db: Session = Depends(get_db), 
-                        current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
+                        current_user: schemas.UserValidationSchema = 
+                        Depends(authorization.get_current_user)):
     """Updates a user's profile"""
+    try:
+        user = db.query(models.User).filter(models.User.id == current_user.id).first()
 
-    user = db.query(models.User).filter(models.User.id == current_user.id).first()
-
-    if user == None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+        if user == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"The requested user profile does not exist")
-    
-    for key, value in updated_profile.dict().items():
-        setattr(user, key, value)
+        
+        if user.id != current_user.id:
+            raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access"
+        )
 
-    db.commit()
-    return user
+        for key, value in updated_profile.dict().items():
+            setattr(user, key, value)
+
+        db.commit()
+        return user
+    except Exception as e:
+        db.rollback()  # Roll back any changes if an error occurs
+        print("Database error:", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while updating your profile. Please try again later."
+        )
 
 
 
 @router.delete("/profile/delete/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user_profile(db: Session = Depends(get_db), 
-                        current_user:schemas.UserValidationSchema = Depends(authorization.get_current_user)):
-    """Deletes a user's profile"""
-    user = db.query(models.User).filter(models.User.id == current_user.id).first()
-
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"The requested user profile does not exist")
-    db.delete(user)
-    db.commit()
+                        current_user:schemas.UserValidationSchema = 
+                        Depends(authorization.get_current_user)):
     
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    """Deletes a user's profile"""
+    try:
+        user = db.query(models.User).filter(models.User.id == current_user.id).first()
+
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"The requested user profile does not exist")
+        if user.id != current_user.id:
+            raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access"
+        )
+
+        db.delete(user)
+        db.commit()
+    
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    
+    except Exception as e:
+        db.rollback()  # Roll back any changes if an error occurs
+        print("Database_error: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while updating your profile. Please try again later.")
 
 
 
@@ -101,24 +145,39 @@ def update_user_password(password_change: schemas.PasswordChange, db: Session = 
                          current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
     """Updates a user's password"""
 
+    # Find the user in the database
     user = db.query(models.User).filter(models.User.id == current_user.id).first()
 
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail="User not found")
-    
+        
+    if user.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access"
+        )
+
     # Verify old password
     if not helper_functions.verify_password(password_change.old_password, user.password):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
                             detail="Old password is incorrect")
-    
-    # Hash and update the new password
-    user.password = helper_functions.hash_password(password_change.new_password)
-    db.commit()
-    return user
+
+    try:
+        # Hash and update the new password
+        user.password = helper_functions.hash_password(password_change.new_password)
+        db.commit()
+        return user
+
+    except Exception as e:
+        db.rollback()  # Roll back any changes if an error occurs
+        print("Database_error: ", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while changing your password. Please try again later.")
 
 
-    
+
+
     
 
 

@@ -1,7 +1,7 @@
-from pydantic import BaseModel, EmailStr
-from datetime import datetime, time
+from pydantic import BaseModel, EmailStr, validator
+from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 #################################################
 
@@ -20,11 +20,21 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: str
     created_at: datetime
+    
 
     class Config:
         from_attributes = True
 
 
+class UserUpdate(BaseModel):
+    email: EmailStr
+    username: str
+
+    class Config:
+        from_attributes = True
+
+class UserUpdateResponse(UserResponse):
+    message: str
 ###############################################
 
 
@@ -52,24 +62,49 @@ class PasswordChange(BaseModel):
 
 ######################################################
 
-class StylistCreate(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    bio: str
-    specialization: str
-    service_id: List[int] #List of serivces.service_id
-
 
 class ServiceCreate(BaseModel):
-    service_id: int
     name: str
     description: str
     duration: float
     price: float
 
 
+class ServiceUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    duration: Optional[int] = None
+    price: Optional[float] = None
+    stylists: Optional[List[int]] = None  # List of stylist IDs to update the relationship
+
+    class Config:
+        from_attributes = True
+
+class StylistCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    bio: str
+    specialization: str
+
+    #service_ids: Optional[List[int]] = []
+ 
+    class Config:
+        from_attributes = True
+
+
 #######################################################
+
+
+class ServiceResponse(BaseModel):
+    service_id: int
+    name: str
+    description: str
+    duration: int
+    price: float
+    created_at: datetime
+    #stylists: Optional[List[int]] = []
+
 
 
 class StylistResponse(BaseModel):
@@ -77,20 +112,48 @@ class StylistResponse(BaseModel):
     username: str
     email: EmailStr
     bio: str
-    services: List[ServiceCreate]
+    specialization: str
+    active: bool
+    services: List[ServiceResponse]  # This represents the related services for each stylist
+
+    class Config:
+        from_attributes = True
+
+
+    
+
+    class Config:
+        from_attributes = True
 
 
 
-class ServiceResponse(BaseModel):
-    id: int
-    service_id: int
-    name: str
-    description: str
-    duration: float
-    price: float
-    created_at: datetime
-    stylists: List[StylistResponse]
+class StylistProfileUpdate(BaseModel):
+    username: Optional[str]
+    email: Optional[EmailStr]
+    password: Optional[str]
+    bio: Optional[str]
+    specialization: Optional[str]
 
+    class Config:
+        from_attributes = True
+
+
+class StylistUpdate(BaseModel):
+    username: Optional[str]
+    email: Optional[EmailStr]
+    bio: Optional[str]
+    specialization: Optional[str]
+    service_ids: Optional[List[int]]  # List of service IDs to update associations
+
+    class Config:
+        from_attributes = True
+
+class StylistFilter(BaseModel):
+    service_id: Optional[int] = None
+    specialization: Optional[str] = None
+    rating: Optional[float] = None
+    limit: int = 10
+    offset: int = 0
 
 
 ######################################################
@@ -101,20 +164,47 @@ class BookingCreate(BaseModel):
     appointment_time: datetime
 
 
-class BookingResponse(BookingCreate):
+    @validator("appointment_time")
+    def validate_appointment_time(cls, value):
+        if value <= datetime.now(timezone.utc):
+            raise ValueError("Appointment time must be in the future.")
+        return value
+    
+
+class BookingCreateForUser(BaseModel):
+    user_id: int
+    stylist_id: int
+    service_id: int
+    appointment_time: datetime
+
+
+    @validator("appointment_time")
+    def validate_appointment_time(cls, value):
+        if value <= datetime.now(timezone.utc):
+            raise ValueError("Appointment time must be in the future.")
+        return value
+
+
+class BookingUpdate(BookingCreate):
+    pass
+
+class BookingResponse(BaseModel):
     id: int
     user_id: int
-    service_id: int
     stylist_id: int
+    service_id: int
     appointment_time: datetime
     status: str
+    stylist_name: str
+    service_name: str
 
     class Config:
         from_attributes = True
 
 
-class BookingStatusUpdate(BaseModel):
-    status: Literal["accepted", "rejected"]
+class BookingListResponse(BaseModel):
+    previous_bookings: List[BookingResponse]
+    upcoming_bookings: List[BookingResponse]
 
 ##########################################################
 

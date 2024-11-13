@@ -70,7 +70,7 @@ def get_current_user(token: schemas.TokenData = Depends(oauth2_scheme),
 def get_current_admin(token: schemas.TokenData = Depends(oauth2_scheme), 
                       db: Session = Depends(database.get_db)):
       credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                          detail=f"could not validate credentials", 
+                                          detail=f"Access restricted: Admin privileges required", 
                                           headers={"WWW-Authenticate": "Bearer"})
       
       token = verify_access_token(token, credentials_exception)
@@ -88,7 +88,7 @@ def get_current_admin(token: schemas.TokenData = Depends(oauth2_scheme),
 def get_current_stylist(token: schemas.TokenData = Depends(oauth2_scheme), 
                       db: Session = Depends(database.get_db)):
       credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                          detail=f"could not validate credentials", 
+                                          detail=f"Access restricted: Only for stylists", 
                                           headers={"WWW-Authenticate": "Bearer"})
       token = verify_access_token(token, credentials_exception)
 
