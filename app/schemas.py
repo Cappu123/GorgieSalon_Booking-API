@@ -151,7 +151,7 @@ class StylistUpdate(BaseModel):
 class StylistFilter(BaseModel):
     service_id: Optional[int] = None
     specialization: Optional[str] = None
-    rating: Optional[float] = None
+    average_rating: Optional[float] = None
     limit: int = 10
     offset: int = 0
 

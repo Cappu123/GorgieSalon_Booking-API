@@ -519,4 +519,3 @@ def view_all_stylists(db: Session = Depends(get_db),
 
     stylists = db.query(models.Stylist).all()
     return stylists
-

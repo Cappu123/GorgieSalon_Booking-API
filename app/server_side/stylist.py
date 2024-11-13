@@ -67,7 +67,7 @@ def filter_stylists(stylist_filter: schemas.StylistFilter,
         if stylist_filter.specialization:
             query = query.filter(models.Stylist.specialization.ilike(f"%{stylist_filter.specialization}%"))
 
-        if stylist_filter.rating:
+        if stylist_filter.average_rating:
             query = query.filter(models.Stylist.rating >= stylist_filter.rating)
 
         # Apply pagination

@@ -32,6 +32,8 @@ class User(Base):
     
     # Relationships
     bookings = relationship("Booking", back_populates="user", cascade="all, delete-orphan")
+    reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan")
+
 
 class Stylist(Base):
     """Stylists model"""
@@ -51,6 +53,7 @@ class Stylist(Base):
     # Relationships
     bookings = relationship("Booking", back_populates="stylist", cascade="all, delete-orphan")
     services = relationship("Service", secondary="stylist_services", back_populates="stylists")
+    reviews = relationship("Review", back_populates="stylist", cascade="all, delete-orphan")
 
 
 class Service(Base):
@@ -58,7 +61,7 @@ class Service(Base):
     __tablename__ = 'services'
 
     service_id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=False)  
     duration = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)
@@ -103,6 +106,12 @@ class Review(Base):
     __tablename__ = 'reviews'
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    stylist_id = Column(Integer, ForeignKey("stylists.id"), nullable=False)
     rating = Column(Integer)  # Rating out of 5
     comments = Column(String)
     created_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+
+    # Relationships
+    user = relationship("User", back_populates="reviews")
+    stylist = relationship("Stylist", back_populates="reviews")
