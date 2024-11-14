@@ -11,6 +11,29 @@ router = APIRouter(tags=['Authentication'])
 @router.post('/login', response_model=schemas.Token)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), 
           db: Session = Depends(database.get_db)):
+    
+    """
+    Authenticate a user and generate a Bearer token.
+
+    This endpoint allows users (Admins, Stylists, and Clients) to log in to the application by providing
+    their username and password. The system will verify the credentials across the following tables:
+    - Admins table
+    - Stylists table
+    - Clients (User) table
+
+    If the credentials are correct, an access token is generated and returned for use in subsequent requests.
+
+    Parameters:
+    - user_credentials: The login credentials (username and password) provided by the user.
+    - db: The database session dependency for querying the database.
+
+    Returns:
+    - A dictionary containing the `access_token` and its `token_type` (bearer).
+    
+    Raises:
+    - HTTPException: If the provided credentials are invalid or no matching user is found.
+    """
+    
     user = None
     role = None
 

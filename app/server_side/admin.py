@@ -11,12 +11,33 @@ router = APIRouter(
 )
 
 
-@router.post("/create_services", response_model=List[schemas.ServiceResponse], status_code=status.HTTP_201_CREATED)
+@router.post("/create_services", response_model=List[schemas.ServiceResponse], 
+             status_code=status.HTTP_201_CREATED)
 def create_services(
     services: List[schemas.ServiceCreate],  
     db: Session = Depends(get_db),
     current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)
 ):
+    """
+    Create new services in the system.
+
+    This endpoint allows an admin to add one or more services to the database. The request must include
+    a list of services, each containing the service name, description, duration, and price. The system
+    checks if a service with the same name already exists before adding the new service.
+
+    Parameters:
+    - services: A list of service details (name, description, duration, price) to be added.
+    - db: The database session for querying and interacting with the database.
+    - current_admin: The currently authenticated admin user, checked via dependency injection.
+
+    Returns:
+    - A list of `ServiceResponse` objects representing the successfully created services.
+
+    Raises:
+    - HTTPException: If the user is not an admin, if a service with the same name already exists,
+      or if there is an internal server error during the database operation.
+    """
+
     # Check for admin role
     if current_admin.role != "admin":
         raise HTTPException(
@@ -79,6 +100,30 @@ def update_service(service_id: int, service_data: schemas.ServiceUpdate,
                    db: Session = Depends(get_db), current_admin: schemas.UserValidationSchema = 
                    Depends(authorization.get_current_admin)):
     
+    """
+    Update the details of an existing service.
+
+    This endpoint allows an admin to update the details of a specific service. The service can be 
+    updated with new values for its `name`, `description`, `duration`, `price`, and associated `stylists`. 
+    If a stylist is provided, their associations to the service will be updated.
+
+    Parameters:
+    - service_id: The ID of the service to be updated.
+    - service_data: The new service data containing updated information for the service.
+    - db: The database session for querying and interacting with the database.
+    - current_admin: The currently authenticated admin user, checked via dependency injection.
+
+    Returns:
+    - A `ServiceResponse` object representing the updated service, including the `service_id`, `name`, 
+      `description`, `duration`, `price`, and the list of associated stylists.
+
+    Raises:
+    - HTTPException:
+        - If the user is not an admin, a `403 Forbidden` error is raised.
+        - If the service is not found, a `404 Not Found` error is raised.
+        - If a stylist ID is provided that does not exist, a `404 Not Found` error is raised.
+    """
+
     # Check for admin role
     if current_admin.role != "admin":
         raise HTTPException(
@@ -111,7 +156,8 @@ def update_service(service_id: int, service_data: schemas.ServiceUpdate,
             if stylist:
                 service.stylists.append(stylist)  # Add the stylist to the service
             else:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Stylist with ID {stylist_id} not found")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                                    detail=f"Stylist with ID {stylist_id} not found")
     
     # Commit the changes to the database
     db.commit()
@@ -125,6 +171,27 @@ def update_service(service_id: int, service_data: schemas.ServiceUpdate,
 def delete_service(service_id: int, db: Session = Depends(get_db), 
                    current_admin: schemas.UserValidationSchema = 
                    Depends(authorization.get_current_admin)):
+    
+    """
+    Delete a service by its ID.
+
+    This endpoint allows an admin to delete a specific service from the system. Before deleting,
+    the service's associations with stylists are removed from the relationship table. Afterward,
+    the service is deleted from the database.
+
+    Parameters:
+    - service_id: The ID of the service to be deleted.
+    - db: The database session for querying and interacting with the database.
+    - current_admin: The currently authenticated admin user, checked via dependency injection.
+
+    Returns:
+    - A confirmation message indicating the service was deleted successfully.
+
+    Raises:
+    - HTTPException:
+        - If the user is not an admin, a `403 Forbidden` error is raised.
+        - If the service is not found, a `404 Not Found` error is raised.
+    """
     
     # Check if the current user is an admin
     if current_admin.role != "admin":
@@ -163,6 +230,25 @@ def create_stylist(
     db: Session = Depends(get_db),
     current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)
 ):
+    
+    """
+    Create one or more stylists and associate them with services.
+
+    This endpoint allows an admin to create new stylist accounts, hash their passwords, and associate them with services. The newly created stylist data, including their associated services, is returned in the response.
+
+    Parameters:
+    - stylists_data: A list of stylist data to be created. Each stylist includes username, email, password, bio, and specialization.
+    - db: The database session for querying and interacting with the database.
+    - current_admin: The currently authenticated admin user, checked via dependency injection.
+
+    Returns:
+    - A list of stylist response data, including associated services, for each stylist created.
+
+    Raises:
+    - HTTPException:
+        - If the user is not an admin, a `403 Forbidden` error is raised.
+    """
+
     if current_admin.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -193,7 +279,8 @@ def create_stylist(
         
 
         # Fetch the stylist with their associated services 
-        stylist_with_services = db.query(models.Stylist).options(joinedload(models.Stylist.services)).filter(models.Stylist.id == new_stylist.id).first()
+        stylist_with_services = db.query(models.Stylist).options(joinedload(models.Stylist.services)).filter(
+            models.Stylist.id == new_stylist.id).first()
 
 
         # Append created stylist to response list
@@ -202,8 +289,6 @@ def create_stylist(
     return created_stylists
 
 
-    
-  
 
 @router.put("/update_stylist/", response_model=schemas.StylistResponse)
 def update_stylist(
@@ -212,6 +297,28 @@ def update_stylist(
     db: Session = Depends(get_db),
     current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)
 ):
+    
+    """
+    Update the details of an existing stylist.
+
+    This endpoint allows an admin to update a stylist's information, including their username, email, bio, specialization, and associated services. Only admins are authorized to update stylist details.
+
+    Parameters:
+    - stylist_id: The ID of the stylist to be updated.
+    - stylist_data: The new stylist data to update, including optional fields such as username, email, bio, specialization, and associated services.
+    - db: The database session for querying and interacting with the database.
+    - current_admin: The currently authenticated admin user, checked via dependency injection.
+
+    Returns:
+    - The updated stylist information, including their associated services.
+
+    Raises:
+    - HTTPException:
+        - If the user is not an admin, a `403 Forbidden` error is raised.
+        - If the stylist with the provided `stylist_id` is not found, a `404 Not Found` error is raised.
+        - If any service ID in the `service_ids` list is not found, a `404 Not Found` error is raised.
+    """
+    
     # Check if the current user is an admin
     if current_admin.role != "admin":
         raise HTTPException(
@@ -264,6 +371,26 @@ def delete_stylist(
     db: Session = Depends(get_db),
     current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)
 ):
+    
+    """
+    Delete a stylist from the system.
+
+    This endpoint allows an admin to delete a stylist from the system. The stylist's associated services are also removed from the relationship table. Only admins are authorized to delete stylists.
+
+    Parameters:
+    - stylist_id: The ID of the stylist to be deleted.
+    - db: The database session for querying and interacting with the database.
+    - current_admin: The currently authenticated admin user, checked via dependency injection.
+
+    Returns:
+    - A success message indicating that the stylist has been successfully deleted.
+
+    Raises:
+    - HTTPException:
+        - If the user is not an admin, a `403 Forbidden` error is raised.
+        - If the stylist with the provided `stylist_id` is not found, a `404 Not Found` error is raised.
+    """
+
     # Check if the current user is an admin
     if current_admin.role != "admin":
         raise HTTPException(
@@ -295,6 +422,25 @@ def delete_stylist(
 def register_admin(admin: schemas.AdminCreate, 
                    db: Session = Depends(get_db), 
                    current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
+    
+    """
+    Register a new admin user.
+
+    This endpoint allows an existing admin to register a new admin user. The provided username and email are checked to ensure that no other admin with the same username or email exists. Passwords are hashed before being saved. Only admins are authorized to add new admin users.
+
+    Parameters:
+    - admin: The data for the new admin user, including username, email, and password.
+    - db: The database session for querying and interacting with the database.
+    - current_admin: The currently authenticated admin user, validated via dependency injection to ensure that the current user is an admin.
+
+    Returns:
+    - The newly created admin user, including their username, email, and other details.
+
+    Raises:
+    - HTTPException:
+        - If the current user is not an admin, a `403 Forbidden` error is raised.
+        - If an admin with the same username or email already exists, a `400 Bad Request` error is raised.
+    """
     
     # Check for admin role
     if current_admin.role != "admin":
@@ -335,6 +481,29 @@ def delete_admin(admin_id: int,
                  current_admin: schemas.UserValidationSchema = 
                  Depends(authorization.get_current_admin)):
     
+    """
+    Delete an admin user.
+
+    This endpoint allows an existing admin to delete another admin user. It performs several checks:
+    - Ensures that only admins can delete other admins.
+    - Prevents an admin from deleting their own account.
+    - Verifies that the specified admin exists before deletion.
+
+    Parameters:
+    - admin_id: The ID of the admin to be deleted.
+    - db: The database session used to interact with the database.
+    - current_admin: The currently authenticated admin user, validated through dependency injection to ensure the current user is an admin.
+
+    Returns:
+    - A success message indicating the admin was successfully deleted.
+
+    Raises:
+    - HTTPException:
+        - If the current user is not an admin, a `403 Forbidden` error is raised.
+        - If the current user attempts to delete their own admin account, a `400 Bad Request` error is raised.
+        - If the specified admin does not exist, a `404 Not Found` error is raised.
+    """
+    
     # Check for admin role
     if current_admin.role != "admin":
         raise HTTPException(
@@ -372,7 +541,32 @@ def accept_booking(booking_id: int,  stylist_id: int,
                            db: Session = Depends(get_db), 
                            current_user: schemas.UserValidationSchema = 
                            Depends(authorization.get_current_admin)):
-    """admin verifies booking request"""
+    
+    """
+    Admin verifies and accepts a booking request.
+
+    This endpoint allows an authenticated admin to verify and accept a booking request. It performs multiple checks:
+    - Ensures the service associated with the booking exists.
+    - Verifies the stylist exists.
+    - Checks that the current user is an admin.
+    - Verifies the booking exists and is still in a "pending" state.
+    - Updates the booking status to "confirmed" once accepted.
+
+    Parameters:
+    - booking_id: The ID of the booking to accept.
+    - stylist_id: The ID of the stylist to be associated with the booking.
+    - db: The database session used for querying and committing changes.
+    - current_user: The currently authenticated user, validated to be an admin.
+
+    Returns:
+    - The updated booking information with the status changed to "confirmed".
+
+    Raises:
+    - HTTPException:
+        - If the service or stylist does not exist, a `404 Not Found` error is raised.
+        - If the current user is not an admin, a `403 Forbidden` error is raised.
+        - If the booking does not exist or is not in a "pending" state, a `404 Not Found` or `400 Bad Request` error is raised.
+    """
 
     # Check if the service exists
     service = db.query(models.Service).filter(models.Service.service_id == booking_id).first()
@@ -414,11 +608,33 @@ def accept_booking(booking_id: int,  stylist_id: int,
     return booking
 
 
-
 @router.post("/reject/", response_model=schemas.BookingResponse)
 def reject_booking(booking_id: int, db: Session = Depends(get_db), 
                    current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
-    """Admin Rejects Booking"""
+    
+    """
+    Admin rejects a booking request.
+
+    This endpoint allows an authenticated admin to reject a booking request. It performs several checks:
+    - Ensures the booking exists.
+    - Verifies the current user is an admin.
+    - Checks that the booking is still in the "pending" state (not confirmed or rejected).
+    - Updates the booking status to "rejected" upon rejection.
+
+    Parameters:
+    - booking_id: The ID of the booking to reject.
+    - db: The database session used for querying and committing changes.
+    - current_admin: The currently authenticated user, validated to be an admin.
+
+    Returns:
+    - The updated booking information with the status changed to "rejected".
+
+    Raises:
+    - HTTPException:
+        - If the booking does not exist, a `404 Not Found` error is raised.
+        - If the current user is not an admin, a `403 Forbidden` error is raised.
+        - If the booking is not in a "pending" state, a `400 Bad Request` error is raised.
+    """
 
     # Check if the booking exists
     booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
@@ -455,6 +671,31 @@ def reject_booking(booking_id: int, db: Session = Depends(get_db),
 @router.post("/complete/{booking_id}", response_model=schemas.BookingResponse)
 def complete_booking(booking_id: int, db: Session = Depends(get_db), 
                      current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
+    
+    """
+    Admin marks a booking as completed.
+
+    This endpoint allows an authenticated admin to mark a booking as completed. It performs several checks:
+    - Ensures the booking exists.
+    - Verifies the current user is an admin.
+    - Ensures the booking is in the "confirmed" state before allowing it to be marked as completed.
+    - Updates the booking status to "completed" once the checks pass.
+
+    Parameters:
+    - booking_id: The ID of the booking to complete.
+    - db: The database session used for querying and committing changes.
+    - current_admin: The currently authenticated user, validated to be an admin.
+
+    Returns:
+    - The updated booking information with the status changed to "completed".
+
+    Raises:
+    - HTTPException:
+        - If the booking does not exist, a `404 Not Found` error is raised.
+        - If the current user is not an admin, a `403 Forbidden` error is raised.
+        - If the booking is not in a "confirmed" state, a `400 Bad Request` error is raised.
+    """
+
     # Check if the booking exists
     booking = db.query(models.Booking).filter(models.Booking.id == booking_id).first()
     if not booking:
@@ -491,6 +732,26 @@ def get_all_bookings(
     db: Session = Depends(get_db),
     current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)  
 ):
+    """
+    Retrieve all bookings in the system.
+
+    This endpoint allows an authenticated admin to retrieve a list of all bookings in the system. 
+    It performs the following steps:
+    - Ensures the current user is an admin.
+    - Retrieves all bookings from the database.
+    - If no bookings are found, it raises a `404 Not Found` error.
+
+    Parameters:
+    - db: The database session used for querying the bookings.
+    - current_admin: The currently authenticated admin user, validated via dependency injection.
+
+    Returns:
+    - A list of all bookings in the system.
+
+    Raises:
+    - HTTPException:
+        - If no bookings are found, a `404 Not Found` error is raised.
+    """
     
     bookings = db.query(models.Booking).all()
     if not bookings:
@@ -505,7 +766,23 @@ def get_all_bookings(
 @router.get("/users", response_model=List[schemas.UserResponse])
 def view_all_users(db: Session = Depends(get_db), 
                      current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
-    """Admins can see all users"""
+    
+    """
+    Retrieve all users in the system.
+
+    This endpoint allows an authenticated admin to retrieve a list of all users (including both stylists and non-stylists) in the system. 
+    It performs the following steps:
+    - Ensures the current user is an admin.
+    - Retrieves all users from the database.
+
+    Parameters:
+    - db: The database session used for querying the users.
+    - current_admin: The currently authenticated admin user, validated via dependency injection.
+
+    Returns:
+    - A list of all users in the system.
+
+    """
 
     users = db.query(models.User).all()
     return users
@@ -515,7 +792,23 @@ def view_all_users(db: Session = Depends(get_db),
 @router.get("/stylists", response_model=List[schemas.StylistResponse])
 def view_all_stylists(db: Session = Depends(get_db), 
                    current_admin: schemas.UserValidationSchema = Depends(authorization.get_current_admin)):
-    """Admins can see all stylists"""
+    
+    """
+    Retrieve all stylists in the system.
+
+    This endpoint allows an authenticated admin to retrieve a list of all stylists in the system. 
+    It performs the following steps:
+    - Ensures the current user is an admin.
+    - Retrieves all stylists from the database.
+
+    Parameters:
+    - db: The database session used for querying the stylists.
+    - current_admin: The currently authenticated admin user, validated via dependency injection.
+
+    Returns:
+    - A list of all stylists in the system.
+
+    """
 
     stylists = db.query(models.Stylist).all()
     return stylists

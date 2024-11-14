@@ -12,9 +12,56 @@ router = APIRouter(
     tags=['Reviews']
 )
 
-@router.post("/stylist", response_model=schemas.ReviewResponse)
+@router.post("/stylist", response_model=schemas.ReviewResponse, 
+             status_code=status.HTTP_201_CREATED)
+
 def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db), 
                   current_user: schemas.UserValidationSchema = Depends(authorization.get_current_user)):
+    
+    """
+    ## Create Stylist Review
+
+    This endpoint enables authenticated clients to submit a review for a stylist. The review includes a rating (1-5) and optional text. Only clients are allowed to submit reviews.
+
+    ### Parameters
+    - **review** (ReviewCreate): The data required to create a review, including `stylist_id`, `rating`, and `review_text`.
+    - **db** (Session): The database session dependency.
+    - **current_user** (UserValidationSchema): The authenticated user who is submitting the review.
+
+    ### Returns
+    - **ReviewResponse**: The newly created review, including the stylist's ID, rating, review text, and timestamp.
+
+    ### Error Responses
+    - **403 Forbidden**: If the user is not a client (i.e., unauthorized role).
+    - **404 Not Found**: If either the stylist or user does not exist.
+    - **400 Bad Request**: If the provided rating is outside the 1-5 range.
+    - **500 Internal Server Error**: If an unexpected error occurs during review creation.
+
+    ### Example Usage
+    - **Request**: `POST /stylist`
+      ```json
+      {
+          "stylist_id": 1,
+          "rating": 5,
+          "review_text": "Excellent service, highly recommend!"
+      }
+      ```
+    - **Response**: Newly created review details:
+      ```json
+      {
+          "id": 1,
+          "user_id": 123,
+          "stylist_id": 1,
+          "rating": 5,
+          "review_text": "Excellent service, highly recommend!",
+          "created_at": "2024-11-14T12:34:56"
+      }
+      ```
+
+    ### Important Notes
+    - Only users with the role of `client` are allowed to submit reviews.
+    - Ratings must be between 1 and 5.
+    """
     
     if current_user.role != "client":
         raise HTTPException(
@@ -69,8 +116,40 @@ def get_average_rating(stylist_id: int, db: Session) -> float:
 
 
 # Route to retrieve average rating of a specific stylist by ID
-@router.get("/average_rating")
-def stylist_average_rating(stylist_id: int, db: Session = Depends(get_db)) -> float:
+@router.get("/average_rating", status_code=status.HTTP_200_OK, response_model=float
+)
+def stylist_average_rating(stylist_id: int, db: Session = Depends(get_db), 
+                           current_user: schemas.UserValidationSchema = 
+                           Depends(authorization.get_current_user)) -> float:
+
+    """
+    ## Get Stylist's Average Rating
+    
+    This endpoint calculates the average rating for a stylist based on the reviews they have received.
+    The rating is calculated as an average of all the reviews associated with the stylist. If no reviews are found,
+    a rating of 0.0 is returned.
+
+    ### Parameters
+    - **stylist_id** (int): The unique identifier for the stylist whose average rating is to be retrieved.
+    - **db** (Session): The database session dependency.
+
+    ### Returns
+    - **float**: The average rating for the stylist, rounded to two decimal places. If no reviews exist, the rating is 0.0.
+
+    ### Error Responses
+    - **500 Internal Server Error**: If there is an issue with calculating the average rating due to a database error.
+
+    ### Example Usage
+    - **Request**: `GET /average_rating?stylist_id=1`
+    - **Response**:
+      ```json
+      4.5
+      ```
+
+    ### Important Notes
+    - The average rating is calculated based on all the reviews associated with the stylist's ID.
+    - If no reviews exist for the stylist, the function returns a rating of 0.0.
+    """
     try:
         # Calculate the average rating
         average_rating = get_average_rating(stylist_id, db)
